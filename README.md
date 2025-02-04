@@ -368,6 +368,10 @@ model Todolist {
 }
 ```
 
+<details>
+
+<summary> อธิบาย Model Table </summary>
+
 `model` ตำสั่งสร้าง table
 
 `Todolist` ชื่อของ table
@@ -392,6 +396,14 @@ model Todolist {
 
 `@@map("table_name")` เปลี่ยนชื่อ table ใข้ "double quote"
 
+</details>
+
+##
+
+<details>
+
+<summary> อธิบาย Foreign Key </summary>
+
 ```js
   userId     Int
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -410,6 +422,10 @@ model Todolist {
 `references: [id]` คือ column ที่เราจะใช้ในการ match ใน **reference table** ที่จะถูกดึงมา join
 
 `onDelete` ตั่งค่าเมื่อ field ใน reference table โดนลบ
+
+</details>
+
+##
 
 <details>
 
