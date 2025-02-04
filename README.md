@@ -9,6 +9,10 @@ npm init -y
 npm i express cors dotenv bcryptjs jsonwebtoken multer cloudinary morgan express-rate-limit
 ```
 
+<details>
+
+<summary> Library ต่างๆไว้ทำอะไรบ้าง </summary>
+
 `express` web application framwork
 
 `cors` cross origin resource sharing สามารถทำให้เรารับ request ได้จากหลายๆที่
@@ -30,6 +34,8 @@ npm i express cors dotenv bcryptjs jsonwebtoken multer cloudinary morgan express
 `fs` built-in library ไม่ต้อง install - ใช้ในการจัดการไฟล์ใน server เรา
 
 image from user ---> multer แปลง ---> fs บันทึกลงเครื่องและจัดการ ---> cloudinary เพื่ออัพไปเก็บ
+
+</details>
 
 ##
 
@@ -58,13 +64,15 @@ image from user ---> multer แปลง ---> fs บันทึกลงเค�
 
 ```js
 const express = require('express');
-const app = express(); // ใช้สร้าง express application
+const app = express(); // ใช้สร้าง express application instance
 // code อื่นๆ อยู่ตรงนี้
 const PORT = 8081;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`)); // ใช้เปิด server
 ```
 
 รูปแบบ: `app.listen(path, [callback])`
+
+**CLI** รับโค้ดผ่าน `npm run dev` หรือ `npm start` ตามที่ตั้งค่าไว้
 
 ##
 
@@ -88,6 +96,10 @@ const errorMiddleware = (err, req, res, next) => {
 
 module.exports = errorMiddleware;
 ```
+
+`err.statusCode || 500` หมายความว่า ถ้ามี err.statusCode ก็จะส่ง err.statusCode แต่ถ้าไม่มีก็จะส่ง 500
+
+`message: err.message || 'Internal Server Error'` เป็นการใส่ค่าให้ property ที่ขื่อว่า message หากมี err.message ก็จะใส่ err.message หากไม่มีก็จะใส่ 'Internal Server Error'
 
 **/src/middlewares/not-found.js** สร้าง file ชื่อ not-found.js ใน folder middlewares
 not-found จะใช้ในกรณีที่ path ที่ถูกเรียกมาไม่มีอยู่ใน server
@@ -163,6 +175,8 @@ app.use(limiter);
 
 **src/utils/create-error.js** สร้าง file ชื่อ create-error.js ใน folder utils
 
+Error Middleware เราต้องการ 2 ค่า: statusCode และ Message เพราะฉะนั้น error object ที่เราส่งจะต้องมีทั้ง2 property นี้
+
 ```js
 const createError = (statusCode, message) => {
   const error = new Error(message);
@@ -188,6 +202,8 @@ app.use('api/v1/todo');
 
 // notFound อยู่ข้างล่างนี้
 ```
+
+server ตอนนี้จะ error อยู่เพราะ app.use ต้องการ middleware
 
 ไปสร้าง file ของแต่ละ route ภายใน folder /src/routes
 
@@ -281,6 +297,24 @@ module.exports = authRouter;
 
 auth-router.js เราจะดูเรียบร้อยขึ้น
 
+##
+
+\*_/server.js_ import และนำ router ทั้งหมดที่เราเขียนไปใส่ใน `app.use('/path')`
+
+```js
+const authRouter = require('./src/routes/auth-router');
+const userRouter = require('./src/routes/user-router');
+const todoRouter = require('./src/routes/todo-router');
+
+// code อื่นๆ
+
+app.use('api/v1/auth', authRouter);
+app.use('api/v1/user', userRouter);
+app.use('api/v1/todo', todoRouter);
+
+// notFound อยู่ข้างล่างนี้
+```
+
 # Database
 
 ```bash
@@ -342,7 +376,11 @@ model Todolist {
 
 `Int` `String` `Boolean` datatype ของแต่ละ column
 
+`Int?` `String?` **?** หมายถึงว่า field นั้นสามารถเป็น null ได้
+
 `@id` constraint - column นี้เป็น primary key
+
+`@unique` constraint - ค่าห้ามซ้ำกัน
 
 `@defaul(value)` constraint - ตั้งค่า default ของ column
 
@@ -360,6 +398,64 @@ model Todolist {
 ```
 
 การสร้าง foreign key โดนการ link 2 table เข้าหากัน
+
+`userId` คือ column ใน table ปัจจุบัน ที่เราต้องการใช้ในการ
+
+`user` คือชื่อของ column ใหม่ที่เราจะได้จากการ join
+
+`User` ชื่อของ reference table ที่เราต้องการเอามา join
+
+`fields: [userId]` คือ column ที่เราจะใช้ในการ match ใน **table ปัจจุบัน**
+
+`references: [id]` คือ column ที่เราจะใช้ในการ match ใน **reference table** ที่จะถูกดึงมา join
+
+`onDelete` ตั่งค่าเมื่อ field ใน reference table โดนลบ
+
+<details>
+
+<summary>Setting ของ onDelete</summary>
+
+`Cascade` เมื่อ entry ใน reference table ถูกลบจะทำให้ entry ใน table ปัจจุบันที่ถูกเชื่อมโดนลบไปด้วย
+
+`Restrict` ไม่สามารถลบได้หากมีการเชื่อมอยู่
+
+`SetNull` จะทำให้ field ที่ถูกเชือมโดน set ค่าเป็น null ถ้าตั้งค่า not null ไว้จะ error
+
+`SetDefault` จะทำให้ field ที่ถูกเชือมโดน set ค่าเป็น default ถ้าไม่ได้เขียน @default() ไว้จะ error
+
+</details>
+
+##
+
+<details>
+
+<summary>Data Type ที่ใช้บ่อย</summary>
+
+`Int` เลขจำนวนเต็ม
+
+`Float`
+
+`Decimal` เก็บตัวเลข แต่เป็น string จะทำให้ไม่เกิดการ rounding
+
+`Enum` ช้อยตัวเลือก ให้เขียนตามด้านล่าง และให้เอาชื่อของ enum ชุดนั้นๆ (Role ในกรณีนี้) ไปใส่ในช่อง data type ใน model จำทำให้ field นั้นใส่ได้แค่ USER หรือ ADMIN
+
+```js
+enum Role {
+    USER
+    ADMIN
+}
+```
+
+`String` เก็บ text ทั่วไป
+
+```js
+@db.Char(50) // ต้องมี 50 ตัวเป๊ะๆ ห้ามขาดห้ามเกิน
+@db.VarChar(50) // มีมากที่สุดได้ 50 ตัว ขาดได้แต่ห้ามเกิน นิยมใช้ตัวนี้
+```
+
+`Boolean` หรือ `TinyInt` มี2ค่า true กับ false
+
+</details>
 
 ##
 
