@@ -6,8 +6,30 @@
 
 ```bash
 npm init -y
-npm i express cors dotenv bcryptjs jsonwebtoken cloudinary multer morgan express-rate-limit
+npm i express cors dotenv bcryptjs jsonwebtoken multer cloudinary morgan express-rate-limit
 ```
+
+`express` web application framwork
+
+`cors` cross origin resource sharing สามารถทำให้เรารับ request ได้จากหลายๆที่
+
+`dotenv` ไฟล์ไว้เก็บค่า config ที่เป็นความลับ จะไม่ถูก push ขึ้นไป ทำให้นอื่นไม่เห็น (เช่น database_url)
+
+`bcryptjs` ใช้ในจัดการ password เช่น (hash หรือ ตรวจสอบว่าpasswordที่ส่งมาตรงกับhashที่เก็บไว้มั้ย)
+
+`jsonwebtoken` ใช้นการส่ง token เพื่อยืนยันตัวตนหรือแลกเปลี่ยนข้อมูล
+
+`multer` ใช้ในการแปลงไฟล์ที่รับมาจาก user ทำให้ server เราสามาอ่านได้
+
+`cloudinary` ใช้ในการเชื่อกับ cloudinary บน cloud เอาไว้เก็บภาพแล้วคืนมาเป็น url ให้เราเรียกใช้
+
+`morgan` ใช้ในการ log request ที่เข้ามาใน server ของเรา
+
+`express-rate-limit` ใช้ในการจำกัดจำนวน request ที่สามารถยิงเข้ามาภายในระยะเวลาหนึง
+
+`fs` built-in library ไม่ต้อง install - ใช้ในการจัดการไฟล์ใน server เรา
+
+image from user ---> multer แปลง ---> fs บันทึกลงเครื่องและจัดการ ---> cloudinary เพื่ออัพไปเก็บ
 
 ##
 
@@ -36,15 +58,17 @@ npm i express cors dotenv bcryptjs jsonwebtoken cloudinary multer morgan express
 
 ```js
 const express = require('express');
-const app = express();
+const app = express(); // ใช้สร้าง express application
 // code อื่นๆ อยู่ตรงนี้
 const PORT = 8081;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`)); // ใช้เปิด server
 ```
+
+รูปแบบ: `app.listen(path, [callback])`
 
 ##
 
-สร้าง folder ชื่อว่า src ในระดับสูงสุด
+สร้าง folder ชื่อว่า src ในระดับสูงสุด (ระดับเดียวกับ package.json)
 
 ภายใน src สร้าง folder ย่อยมา configs, controllers, middlewares, models, routes, services, utils, validate
 
@@ -101,6 +125,8 @@ app.use(errorMiddleware);
 
 หากเรามี path อื่นๆ เราจำเป็นที่จะต้องใส่ `app.use(notFound)` ไว้ท้ายสุด เนื่องจาก code เราจะรันจากบนลงล่าง request จะเข้าไปทำ path แรกที่เข้าได้ หากเราเอา notFoundไว้ก่อน มันจะทำnotFound และไม่ลงไปหาตัวอื่นๆ
 
+middleware error สามารถเรียกใช้ตรงไหนก็ได้ เพราะว่า express จะรู้ว่าโดยอัตโนมัติเนื่องจากเป็น middleware ที่รับ parameter 4 ตัว
+
 ##
 
 **/src/utils/rate-limit.js** สร้าง file ใน folder utils ชื่อ rate-limit.js
@@ -146,6 +172,8 @@ const createError = (statusCode, message) => {
 
 module.exports = createError;
 ```
+
+หากเราเรียกใช้ createError ใน try-catch เมื่อฟังชั่นเรา throw error ออกมา โค้ดเราจะข้ามไปรันส่วน catch (error) ทันที ในส่วนนั้นให้เราเขียน next(error) (ดูด้านล่างใน controller)
 
 ##
 
@@ -213,6 +241,9 @@ const authController = {};
 
 authController.register = async (req, res, next) => {
   try {
+    if (/* some error condition */) {
+        return createError(400,'Error Message')
+    }
     res.status(201).json({ message: 'Register successful' });
   } catch (error) {
     next(error);
@@ -229,7 +260,7 @@ authController.login = async (req, res, next) => {
 module.exports = authController;
 ```
 
-ใช้รูปแบบ try-catch เพื่อทำการดักจับ error
+ใช้รูปแบบ try-catch เพื่อทำการดักจับ error จำเป็นต้องใช้รูปแบบนี้เพื่อดัก asynchronous error
 
 เมื่อเกิดการ error ขึ้น โค้ดเราจะเด้งไปรันในส่วนของ catch ซึ่งจะทำการ next(error)
 
@@ -332,7 +363,7 @@ model Todolist {
 
 ##
 
-เมื่อทำการสร้าง table เสร็จตามที่เราต้องการ ให้รันคำสั่งด้านล่างเพื่อ push ทั้งหมดไปใส่ MySQL
+**CLI** เมื่อทำการสร้าง table เสร็จตามที่เราต้องการ ให้รันคำสั่งด้านล่างเพื่อ push ทั้งหมดไปใส่ MySQL
 
 ```bash
 npx prisma db push
